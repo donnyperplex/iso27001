@@ -85,8 +85,13 @@ app.post('/api/chat', async (req, res) => {
     const lastUserMessage = conversation[conversation.length - 1]?.text || "";
     let retrievedContext = "";
 
-    // Lakukan pencarian dokumen jika terkoneksi ke MCP Server
-    if (mcpConnected && lastUserMessage) {
+    // Cek apakah pesan user adalah sapaan sederhana
+    const cleanedMessage = lastUserMessage.toLowerCase().trim().replace(/[^a-zA-Z]/g, '');
+    const greetings = ['hello', 'hi', 'halo', 'hei', 'hey', 'p', 'siang', 'pagi', 'malam', 'sore', 'assalamualaikum', 'welcome'];
+    const isGreeting = greetings.includes(cleanedMessage) || cleanedMessage.length <= 3;
+
+    // Lakukan pencarian dokumen jika terkoneksi ke MCP Server dan bukan sekadar sapaan
+    if (mcpConnected && lastUserMessage && !isGreeting) {
       try {
         const queryVector = await getQueryVector(lastUserMessage);
         if (queryVector) {
@@ -115,7 +120,13 @@ app.post('/api/chat', async (req, res) => {
     }));
 
     // Menyusun systemInstruction khusus beserta konteks referensi ISO 27001
-    const systemInstruction = `Jawab hanya menggunakan bahasa Indonesia. Anda adalah asisten pakar sertifikasi keamanan informasi. Gunakan referensi dokumen ISO 27001-2022 rm.pdf berikut jika relevan untuk menjawab pertanyaan user:
+    const systemInstruction = `Anda adalah asisten pakar sertifikasi keamanan informasi ISO 27001:2022. Jawab hanya menggunakan bahasa Indonesia.
+    
+    ATURAN SAPAAN (GREETINGS):
+    Jika pesan terakhir dari pengguna berupa sapaan sederhana (seperti "hello", "hi", "halo", "pagi", "siang", dll.), sambutlah mereka dengan ramah dan singkat. Perkenalkan diri Anda secara singkat sebagai asisten pakar ISO 27001 dan tanyakan apa yang bisa Anda bantu hari ini. JANGAN langsung memberikan penjelasan panjang lebar, poin-poin, atau definisi tentang ISO 27001.
+
+    ATURAN PENCARIAN REFERENSI (RAG):
+    Gunakan referensi dokumen ISO 27001-2022 rm.pdf berikut jika relevan untuk menjawab pertanyaan user:
     
     [REFERENSI DOKUMEN ISO 27001]
     ${retrievedContext || "Tidak ditemukan dokumen referensi yang relevan di database. Jawab berdasarkan pengetahuan internal Anda mengenai ISO 27001:2022."}`;
