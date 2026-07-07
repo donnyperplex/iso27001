@@ -16,7 +16,12 @@
 | 7 | **Fase 7**: Implementasi Fitur Sidebar & UI Enhancements | ✅ Selesai | 100% | Menambahkan fitur Pesan Baru, Telusuri Percakapan, dan Persistensi riwayat. |
 | 8 | **Fase 8**: Sidebar CRUD, Kolaborasi, dan Drag-and-Drop | ✅ Selesai | 100% | Tambahkan edit judul, hapus, bagikan link chat, toggle sidebar, dan reorder list. |
 | 9 | **Fase 9**: Fitur Maximize & Minimize Isi Chat (Individu & Global) | ✅ Selesai | 100% | Pembuatan toggle ciutkan/kembangkan balon obrolan secara mandiri maupun massal sukses. |
-| **Total** | **Progres Keseluruhan Aplikasi** | **Selesai Penuh** | **100%** | **Seluruh 9 fase pengembangan dan integrasi selesai sepenuhnya.** |
+| 10 | **Fase 10**: Tombol Hapus Chat (Tombol X) & Drag-and-Drop Paket Obrolan | ✅ Selesai | 100% | Pembuatan tombol X untuk hapus pesan individu dan drag-and-drop pasangan obrolan (user + Gemini) sukses. |
+| 11 | **Fase 11**: Perbaikan Ikon Global | ✅ Selesai | 100% | Memperbaiki transisi teks tombol balon chat ketika tombol global di klik sukses. |
+| 12 | **Fase 12**: Rancangan Panel Admin | ✅ Selesai | 100% | Menyusun spesifikasi dan best practices panel admin chatbot sukses. |
+| 13 | **Fase 13**: Rancangan Ganti Password & Shortcut Gear | ✅ Selesai | 100% | Menyusun spesifikasi ganti password admin dan tombol shortcut gear sukses. |
+| 14 | **Fase 14**: Perbaikan PDF dan RAG | ✅ Selesai | 100% | Memperbaiki parser PDF modern dan integrasi RAG ke Astra DB. |
+| **Total** | **Progres Keseluruhan Aplikasi** | **Selesai Penuh** | **100%** | **Seluruh 14 fase pengembangan dan integrasi selesai sepenuhnya.** |
 
 ---
 
@@ -79,3 +84,21 @@
 ### FASE 9: Fitur Maximize & Minimize Isi Chat (Individu & Global) (Progres: 100%)
 * **Toggle Lipat/Kembangkan Balon Chat**: Menambahkan tombol pemicu visual kecil di pojok kanan atas setiap pesan untuk melipat pesan panjang (meminimalkan tinggi balon pesan dengan gradien memudar) dan membukanya kembali.
 * **Pengendali Massal (Global Controller)**: Menyediakan tombol pengendali di header obrolan untuk melipat atau mengembangkan seluruh riwayat percakapan secara instan.
+
+### FASE 10: Tombol Hapus Chat (Tombol X) & Drag-and-Drop Paket Obrolan (Progres: 100%)
+* **Tombol Hapus Balon Chat (Tombol X)**: Menambahkan tombol aksi ❌ di header setiap balon pesan untuk menghapus pesan individu dari riwayat. (Selesai)
+* **Drag-and-Drop Paket Balon Chat**: Mengelompokkan pesan user dan bot ke dalam satu kontainer giliran obrolan (Chat Turn) dan mengizinkan drag-and-drop untuk mengatur ulang urutan pasangan obrolan tersebut secara dinamis. (Selesai)
+
+### FASE 11: Perbaikan Ikon Global (Progres: 100%)
+* **Deskripsi**: Memperbaiki transisi teks tombol balon chat ketika tombol global di klik sehingga ikon SVG tidak terdistorsi menjadi tulisan text. (Selesai)
+
+### FASE 12: Rancangan Panel Admin (Progres: 100%)
+* **Deskripsi**: Menyusun spesifikasi dan best practices panel admin chatbot untuk mengelola token secara dinamis, mengunggah/menghapus file PDF di database, dan menyetel parameter model AI secara real-time. (Selesai)
+
+### FASE 13: Rancangan Ganti Password & Shortcut Gear (Progres: 100%)
+* **Deskripsi**: Menyusun spesifikasi ganti password admin secara dinamis di basis data (Astra DB) dan penempatan tombol pintas roda gigi (*settings*) di panel navigasi obrolan utama. (Selesai)
+
+### FASE 14: Perbaikan PDF dan RAG (Progres: 100%)
+* **Adapter Parser PDF Adaptif**: Menyusun skrip parsing teks PDF yang tangguh agar mendukung `pdf-parse` versi modular class-based (v2.x) maupun fungsional CommonJS (v1.x) secara dinamis tanpa mengganggu dependensi.
+* **Integrasi Direct Data API**: Mem-bypass MCP child-process untuk operasi CRUD dokumen dan beralih ke Astra DB REST Data API langsung via `fetch` guna meniadakan error resolve DNS / jaringan lokal (`getaddrinfo ENOTFOUND`).
+* **Sinkronisasi Skema Langflow**: Menyelaraskan nama properti dokumen (`page_content` untuk teks, `metadata.filename` untuk nama file) agar data yang disimpan dari panel admin sinkron dan terbaca bersama data hasil ingest dari skema Langflow.

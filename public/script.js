@@ -14,6 +14,10 @@ const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
 const expandSidebarBtn = document.getElementById('expand-sidebar-btn');
 const globalToggleChatBtn = document.getElementById('global-toggle-chat-btn');
 
+// Konstanta Ikon SVG Balon Chat (Fase 9 & 10)
+const ICON_MINIMIZE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>`;
+const ICON_MAXIMIZE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+
 // Kelola state threads dan riwayat chat dari LocalStorage
 let threads = JSON.parse(localStorage.getItem('chat_threads')) || [];
 let currentThreadId = localStorage.getItem('current_thread_id') || null;
@@ -159,8 +163,91 @@ form.addEventListener('submit', async function (e) {
   }
 });
 
-// Helper: Tampilkan/buat elemen pesan
-function appendMessage(sender, text) {
+// Helper: Mengelompokkan riwayat percakapan menjadi turn (pasangan user + bot)
+function getConversationTurns() {
+  const turns = [];
+  for (let i = 0; i < conversationHistory.length; i++) {
+    const msg = conversationHistory[i];
+    if (msg.role === 'user') {
+      const turn = { userIndex: i, botIndex: null, userMsg: msg, botMsg: null };
+      if (i + 1 < conversationHistory.length && conversationHistory[i + 1].role === 'model') {
+        turn.botIndex = i + 1;
+        turn.botMsg = conversationHistory[i + 1];
+        i++;
+      }
+      turns.push(turn);
+    } else {
+      turns.push({ userIndex: null, botIndex: i, userMsg: null, botMsg: msg });
+    }
+  }
+  return turns;
+}
+
+// Helper: Bind event drag & drop untuk Turn obrolan
+let draggedTurnIndex = null;
+function bindTurnDragEvents(container, index) {
+  container.addEventListener('dragstart', (e) => {
+    draggedTurnIndex = index;
+    e.dataTransfer.effectAllowed = 'move';
+    container.style.opacity = '0.5';
+  });
+
+  container.addEventListener('dragend', () => {
+    container.style.opacity = '1';
+    document.querySelectorAll('.chat-turn-container').forEach(c => {
+      c.classList.remove('drag-over');
+    });
+  });
+
+  container.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    container.classList.add('drag-over');
+  });
+
+  container.addEventListener('dragleave', () => {
+    container.classList.remove('drag-over');
+  });
+
+  container.addEventListener('drop', (e) => {
+    e.preventDefault();
+    container.classList.remove('drag-over');
+    
+    if (draggedTurnIndex !== null && draggedTurnIndex !== index) {
+      reorderTurns(draggedTurnIndex, index);
+    }
+  });
+}
+
+// Helper: Urutkan ulang Turns obrolan pada data history & LocalStorage
+function reorderTurns(fromIndex, toIndex) {
+  const turns = getConversationTurns();
+  const [movedTurn] = turns.splice(fromIndex, 1);
+  turns.splice(toIndex, 0, movedTurn);
+
+  const newHistory = [];
+  turns.forEach(turn => {
+    if (turn.userMsg) newHistory.push(turn.userMsg);
+    if (turn.botMsg) newHistory.push(turn.botMsg);
+  });
+
+  conversationHistory = newHistory;
+  updateThreadConversation();
+  loadCurrentThread();
+  renderThreads(searchInput.value.trim());
+  showToast("Urutan percakapan berhasil diperbarui!");
+}
+
+// Helper: Hapus pesan berdasarkan indeks
+function deleteMessageByIndex(index) {
+  conversationHistory.splice(index, 1);
+  updateThreadConversation();
+  loadCurrentThread();
+  renderThreads(searchInput.value.trim());
+  showToast("Pesan berhasil dihapus!");
+}
+
+// Helper: Membuat elemen HTML untuk balon chat individu
+function createMessageElement(sender, text, index) {
   const wrapper = document.createElement('div');
   wrapper.classList.add('message-wrapper', sender);
 
@@ -175,25 +262,41 @@ function appendMessage(sender, text) {
   label.textContent = sender === 'user' ? 'Anda' : 'Gemini AI';
   header.appendChild(label);
 
-  const iconMinimize = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>`;
-  const iconMaximize = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+  // Bungkus Tombol Aksi Kanan (Minimize & Delete)
+  const actionsWrapper = document.createElement('div');
+  actionsWrapper.style.display = 'flex';
+  actionsWrapper.style.alignItems = 'center';
+  actionsWrapper.style.gap = '6px';
 
   const toggleBtn = document.createElement('button');
   toggleBtn.classList.add('msg-toggle-btn');
   toggleBtn.title = 'Ciutkan Pesan';
-  toggleBtn.innerHTML = iconMinimize;
+  toggleBtn.innerHTML = ICON_MINIMIZE;
   toggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     msg.classList.toggle('minimized');
     if (msg.classList.contains('minimized')) {
-      toggleBtn.innerHTML = iconMaximize;
+      toggleBtn.innerHTML = ICON_MAXIMIZE;
       toggleBtn.title = 'Kembangkan Pesan';
     } else {
-      toggleBtn.innerHTML = iconMinimize;
+      toggleBtn.innerHTML = ICON_MINIMIZE;
       toggleBtn.title = 'Ciutkan Pesan';
     }
   });
-  header.appendChild(toggleBtn);
+  actionsWrapper.appendChild(toggleBtn);
+
+  // Tombol Hapus (Tombol X)
+  const deleteBtn = document.createElement('button');
+  deleteBtn.classList.add('msg-delete-btn');
+  deleteBtn.innerHTML = '&times;';
+  deleteBtn.title = 'Hapus Pesan';
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    deleteMessageByIndex(index);
+  });
+  actionsWrapper.appendChild(deleteBtn);
+
+  header.appendChild(actionsWrapper);
   msg.appendChild(header);
 
   // Buat Body Pesan
@@ -212,7 +315,41 @@ function appendMessage(sender, text) {
   msg.appendChild(body);
   
   wrapper.appendChild(msg);
-  chatBox.appendChild(wrapper);
+  return wrapper;
+}
+
+// Helper: Tampilkan/buat elemen pesan dinamis dengan Turn Wrapper
+function appendMessage(sender, text, index = null) {
+  if (index === null) {
+    index = conversationHistory.length - 1;
+  }
+
+  const wrapper = createMessageElement(sender, text, index);
+
+  let turnContainer;
+  if (sender === 'user') {
+    turnContainer = document.createElement('div');
+    turnContainer.classList.add('chat-turn-container');
+    turnContainer.setAttribute('draggable', 'true');
+    chatBox.appendChild(turnContainer);
+    
+    const turns = getConversationTurns();
+    const turnIndex = turns.length - 1;
+    bindTurnDragEvents(turnContainer, turnIndex);
+  } else {
+    const containers = chatBox.querySelectorAll('.chat-turn-container');
+    if (containers.length > 0) {
+      turnContainer = containers[containers.length - 1];
+    } else {
+      turnContainer = document.createElement('div');
+      turnContainer.classList.add('chat-turn-container');
+      turnContainer.setAttribute('draggable', 'true');
+      chatBox.appendChild(turnContainer);
+      bindTurnDragEvents(turnContainer, 0);
+    }
+  }
+
+  turnContainer.appendChild(wrapper);
   chatBox.scrollTop = chatBox.scrollHeight;
   return wrapper;
 }
@@ -487,10 +624,24 @@ function loadCurrentThread() {
   
   // Jika sedang melihat share chat temp
   if (currentThreadId === 'shared-temp') {
-    conversationHistory.forEach(msg => {
-      const sender = msg.role === 'user' ? 'user' : 'bot';
-      appendMessage(sender, msg.text);
+    const turns = getConversationTurns();
+    turns.forEach((turn, turnIdx) => {
+      const turnContainer = document.createElement('div');
+      turnContainer.classList.add('chat-turn-container');
+      turnContainer.setAttribute('draggable', 'true');
+      bindTurnDragEvents(turnContainer, turnIdx);
+
+      if (turn.userMsg) {
+        const userEl = createMessageElement('user', turn.userMsg.text, turn.userIndex);
+        turnContainer.appendChild(userEl);
+      }
+      if (turn.botMsg) {
+        const botEl = createMessageElement('bot', turn.botMsg.text, turn.botIndex);
+        turnContainer.appendChild(botEl);
+      }
+      chatBox.appendChild(turnContainer);
     });
+    chatBox.scrollTop = chatBox.scrollHeight;
     return;
   }
 
@@ -502,10 +653,25 @@ function loadCurrentThread() {
   const thread = threads.find(t => t.id === currentThreadId);
   if (thread) {
     conversationHistory = thread.conversation;
-    conversationHistory.forEach(msg => {
-      const sender = msg.role === 'user' ? 'user' : 'bot';
-      appendMessage(sender, msg.text);
+    // Bersihkan chatBox dan render per turn secara berkelompok
+    const turns = getConversationTurns();
+    turns.forEach((turn, turnIdx) => {
+      const turnContainer = document.createElement('div');
+      turnContainer.classList.add('chat-turn-container');
+      turnContainer.setAttribute('draggable', 'true');
+      bindTurnDragEvents(turnContainer, turnIdx);
+
+      if (turn.userMsg) {
+        const userEl = createMessageElement('user', turn.userMsg.text, turn.userIndex);
+        turnContainer.appendChild(userEl);
+      }
+      if (turn.botMsg) {
+        const botEl = createMessageElement('bot', turn.botMsg.text, turn.botIndex);
+        turnContainer.appendChild(botEl);
+      }
+      chatBox.appendChild(turnContainer);
     });
+    chatBox.scrollTop = chatBox.scrollHeight;
   } else {
     conversationHistory = [];
     currentThreadId = null;
@@ -538,10 +704,16 @@ globalToggleChatBtn.addEventListener('click', () => {
     const toggleBtn = msg.querySelector('.msg-toggle-btn');
     if (isAllCollapsed) {
       msg.classList.add('minimized');
-      if (toggleBtn) toggleBtn.textContent = 'Kembangkan';
+      if (toggleBtn) {
+        toggleBtn.innerHTML = ICON_MAXIMIZE;
+        toggleBtn.title = 'Kembangkan Pesan';
+      }
     } else {
       msg.classList.remove('minimized');
-      if (toggleBtn) toggleBtn.textContent = 'Ciutkan';
+      if (toggleBtn) {
+        toggleBtn.innerHTML = ICON_MINIMIZE;
+        toggleBtn.title = 'Ciutkan Pesan';
+      }
     }
   });
 
