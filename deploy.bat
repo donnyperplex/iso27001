@@ -25,12 +25,10 @@ echo  MELAKUKAN DEPLOY DIREK KE NETLIFY
 echo ==============================================
 echo [+] Menjalankan Netlify Production Deploy...
 :: Menjalankan deployment menggunakan Netlify CLI dengan Site ID yang sesuai
-npx netlify deploy --prod --site=7bd45849-edec-4c22-abb3-48d3c857f133
+npx netlify deploy --prod --site=e05921a0-0b1b-43f7-b731-1bc8c8b08979
 
 echo.
 echo ==============================================
 echo  SUKSES! Perubahan telah terunggah ke GitHub
-echo  dan dideploy ke Netlify:
-echo  https://iso27001-chatbot.netlify.app/
+echo  dan diproses untuk deployment Netlify.
 echo ==============================================
-pause
